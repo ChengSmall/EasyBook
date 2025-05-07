@@ -372,6 +372,7 @@ namespace Cheng.EasyBooks
                 //节点分卷
                 path = getRootPath(t_node);
 
+                //属于根节点
                 bool isRootPath = path == "text";
                 //if (isRootPath) return;
 
@@ -385,8 +386,9 @@ namespace Cheng.EasyBooks
                 if (isRootPath && (ebk.Header.coverImage is object))
                 {
                     //插入封面
-                    //<img src="../images/0001.jpeg"/>
+                    //<img src="../image/0001.jpeg"/>
                     var imgNode = volXml.CreateElement("img");
+                    //封面路径处于OPS目录下
                     imgNode.SetAttribute("src", ebk.Header.coverImage.pathRepTo());
                     body.InsertAfter(imgNode, body.FirstChild);
 
@@ -674,7 +676,25 @@ namespace Cheng.EasyBooks
             }
             else
             {
-                node.AppendChild(xml.CreateTextNode(eheader.synopsis.Replace("\r", "").Replace("\n", "")));
+                if (eheader.synopsis.IndexOf('\n') < 0)
+                {
+                    node.AppendChild(xml.CreateTextNode(eheader.synopsis));
+                }
+                else
+                {
+                    using (StringReader sread = new StringReader(eheader.synopsis))
+                    {
+                        while (true)
+                        {
+                            var line = sread.ReadLine();
+                            if (line is null) break;
+                            var p = xml.CreateElement("p");
+                            p.AppendChild(xml.CreateTextNode(line));
+                        }
+
+                    }
+                }
+              
             }
             metadata.AppendChild(node);
 
@@ -700,7 +720,7 @@ namespace Cheng.EasyBooks
                     case ".png":
                         medCov = "png";
                         break;
-                    case ".jeg":
+                    case ".jpg":
                     case ".jpeg":
                         medCov = "jpeg";
                         break;

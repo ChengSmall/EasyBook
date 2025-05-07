@@ -595,7 +595,7 @@ namespace Cheng.EasyBooks.WinForms
                 st.mainForm = this;
                 st.path = path;
                 Col_Rtf_BookText.Clear();
-                f_EnableAllContorl();
+                f_DisableAllContorl();
                 Task.Run(st.f_actionSaveToEPUB);
 
             }
