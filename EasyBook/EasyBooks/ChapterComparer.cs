@@ -46,18 +46,18 @@ namespace Cheng.EasyBooks
             {
                 return left < right ? -1 : (left == right ? 0 : 1);
             }
-
-            int xLen = x.Length;
-            int yLen = y.Length;
-            int length = Math.Min(xLen, yLen);
-            for (int i = 0; i < length; i++)
-            {
-                if (x[i] != y[i])
-                {
-                    return x[i] - y[i];
-                }
-            }
-            return xLen < yLen ? -1 : (xLen == yLen ? 0 : 1);
+            return string.CompareOrdinal(x, y);
+            //int xLen = x.Length;
+            //int yLen = y.Length;
+            //int length = Math.Min(xLen, yLen);
+            //for (int i = 0; i < length; i++)
+            //{
+            //    if (x[i] != y[i])
+            //    {
+            //        return x[i] - y[i];
+            //    }
+            //}
+            //return xLen < yLen ? -1 : (xLen == yLen ? 0 : 1);
         }
 
     }

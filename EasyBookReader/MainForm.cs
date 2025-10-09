@@ -26,6 +26,7 @@ using CTNodeD = Cheng.DataStructure.Collections.TreeNode<Cheng.Algorithm.Trees.T
 
 using STreeNode = System.Windows.Forms.TreeNode;
 using System.Reflection;
+using Cheng.Algorithm.Compressions.SharpZipLibDLL;
 
 namespace Cheng.EasyBooks.WinForms
 {
@@ -445,7 +446,7 @@ namespace Cheng.EasyBooks.WinForms
                 SetPreferences(p_preferencesWindow.GetArgs());
                 
             }
-            GC.Collect(0);
+            GC.Collect();
         }
 
         #endregion
@@ -656,7 +657,10 @@ namespace Cheng.EasyBooks.WinForms
                     rtf = new RTFTextWriter(mainForm);
                     using (FileStream zipFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
                     {
-                        using (ZipArchive zip = new ZipArchive(zipFile, ZipArchiveMode.Create, true, Encoding.UTF8))
+                        ConvertEpub.CreateEpubHeader(zipFile);
+
+                        zipFile.Seek(0, SeekOrigin.Begin);
+                        using (ZipArchive zip = new ZipArchive(zipFile, ZipArchiveMode.Update, true, Encoding.UTF8))
                         {
 
                             ConvertEpub.CreateEpubByEbk(mainForm.p_easyBook, zip, rtf);
@@ -844,7 +848,7 @@ namespace Cheng.EasyBooks.WinForms
         /// <param name="path">书籍full文件路径；zip文件路径或json文件路径</param>
         /// <param name="ebk">获取的新书籍</param>
         /// <returns>
-        /// <para>返回1初始化zip文件，返回2初始化json根目录标头；返回-1路径有问题；返回-2路径所指向的不是一个完备的easybook</para>
+        /// <para>返回1初始化zip文件，返回2初始化json根目录标头；返回-1路径有问题；返回-2路径所指向的不是一个完备的easybook，-3其它错误</para>
         /// </returns>
         private int f_initNewEasyBook(string path, out EasyBook ebk)
         {
@@ -855,10 +859,11 @@ namespace Cheng.EasyBooks.WinForms
             {
                 return -1;
             }
-
+            
             bool isJsonFile;
             try
             {
+                //使用json解析器尝试解析判断是否为json文件
                 p_jsonParser.FileToJson(path);
                 isJsonFile = true;
             }
@@ -869,53 +874,58 @@ namespace Cheng.EasyBooks.WinForms
 
             BaseCompressionParser bookData;
             int res;
-            if (isJsonFile)
-            {
-                //属于json
-                //获取根目录
-                var pathDire = Path.GetDirectoryName(path);
-                bookData = new RootToFolderIndexer(pathDire);
-                res = 2;
-            }
-            else
-            {
-                //zip文件
-                FileStream fileStream = null;
-                bookData = null;
-                try
-                {
-                    fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                    bookData = new ZipArchiveCompress(fileStream, ZipArchiveMode.Read, 1024 * 4, true, Encoding.UTF8);
-                }
-                catch (Exception)
-                {
-                    if(bookData != null)
-                    {
-                        bookData.Close();
-                    }
-                    else
-                    {
-                        fileStream?.Close();
-                    }
-                    //也不是zip
-                    return -2;
-                }
-                res = 1;
-            }
 
             try
             {
-                ebk = new EasyBook(bookData, true);
+
+                if (isJsonFile)
+                {
+                    //属于json
+                    //获取根目录
+                    var pathDire = Path.GetDirectoryName(path);
+                    bookData = new RootToFolderIndexer(pathDire);
+                    res = 2;
+                }
+                else
+                {
+                    //zip文件
+                    FileStream fileStream = null;
+                    bookData = null;
+
+                    fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+                    try
+                    {
+                        //bookData = new ZipArchiveCompress(fileStream, ZipArchiveMode.Read, 1024 * 4, true, Encoding.UTF8);
+                        bookData = new ICZipReadOnlyCompressionParser(fileStream, true, 8192, Encoding.UTF8);
+                    }
+                    catch (Exception)
+                    {
+                        fileStream?.Close();
+                        //也不是zip
+                        return -2;
+                    }
+                    res = 1;
+                }
+
+                try
+                {
+                    ebk = new EasyBook(bookData, true);
+                }
+                catch (Exception)
+                {
+                    ebk?.Close();
+                    return -2;
+                }
+
+
+                return res;
             }
             catch (Exception)
             {
-                ebk?.Close();
-                return -2;
+                return -3;
             }
 
-
-            return res;
         }
 
         /// <summary>
@@ -935,9 +945,13 @@ namespace Cheng.EasyBooks.WinForms
                     {
                         ShowMeg_Error(null, "打开的文件不存在！");
                     }
-                    else
+                    else if(i == -2)
                     {
                         ShowMeg_Error(null, "打开的文件不是一个ebk文件或者不是ebk结构的标头！");
+                    }
+                    else
+                    {
+                        ShowMeg_Error("错误", "出现未知错误！");
                     }
                 }
                 return false;
@@ -950,7 +964,7 @@ namespace Cheng.EasyBooks.WinForms
         /// 初始化新的书籍，并关闭之前的书籍；修改标题
         /// </summary>
         /// <param name="path"></param>
-        /// <returns>返回1初始化zip文件，返回2初始化json根目录标头；返回-1路径有问题；返回-2路径所指向的不是一个完备的easybook</returns>
+        /// <returns>返回1初始化zip文件，返回2初始化json根目录标头；返回-1路径有问题；返回-2路径所指向的不是一个完备的easybook，-3其它错误</returns>
         private int f_initEasyBook(string path)
         {
 

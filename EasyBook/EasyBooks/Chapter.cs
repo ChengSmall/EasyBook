@@ -38,7 +38,7 @@ namespace Cheng.EasyBooks
     public struct ChapterLine
     {
 
-        #region
+        #region 构造
 
         /// <summary>
         /// 初始化一个图像插入行
@@ -105,7 +105,7 @@ namespace Cheng.EasyBooks
 
         #endregion
 
-        #region
+        #region 功能
 
         /// <summary>
         /// 表示一个空行
@@ -142,9 +142,10 @@ namespace Cheng.EasyBooks
         public static bool IsEmptyLine(string text)
         {
             if (text is null) throw new ArgumentNullException();
-            var newL = Environment.NewLine;
+
             int length = text.Length;
             if (length == 0) return true;
+            var newL = Environment.NewLine;
             for (int i = 0; i < length; i++)
             {
                 var c = text[i];
@@ -169,7 +170,7 @@ namespace Cheng.EasyBooks
 
             if (IsEmptyLine(text)) return ChapterLine.EmptyLine;
 
-            var re = text.IndexOf('\r');
+            var re = text.IndexOf('\n');
             if (re != -1) throw new ArgumentException(Cheng.Properties.Resources.Exception_ArgsFormatError);
 
             if (text.Length > 3)
@@ -340,6 +341,15 @@ namespace Cheng.EasyBooks
         /// </summary>
         public string chapterFilePath;
 
+        /// <summary>
+        /// 返回章节标题
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return title;
+        }
+
     }
 
     /// <summary>
@@ -355,7 +365,7 @@ namespace Cheng.EasyBooks
         /// </summary>
         public Chapter()
         {
-            Title = "";
+            p_title = string.Empty;
             p_lines = new List<ChapterLine>();
         }
 
@@ -393,7 +403,7 @@ namespace Cheng.EasyBooks
         }
 
         /// <summary>
-        /// 获取该章节所有行数据
+        /// 获取存有该章节所有行数据的集合
         /// </summary>
         public List<ChapterLine> ChapterLines
         {
@@ -491,7 +501,11 @@ namespace Cheng.EasyBooks
             }
             catch (ArgumentException aex)
             {
-                if(nowIndex != -1)
+                if(nowIndex == -1)
+                {
+                    p_lines.RemoveRange(0, count);
+                }
+                else
                 {
                     p_lines.RemoveRange(nowIndex, count);
                 }
@@ -530,7 +544,11 @@ namespace Cheng.EasyBooks
             }
             catch (ArgumentException aex)
             {
-                if (nowIndex != -1)
+                if (nowIndex == -1)
+                {
+                    p_lines.RemoveRange(0, count);
+                }
+                else
                 {
                     p_lines.RemoveRange(nowIndex, count);
                 }
@@ -667,7 +685,7 @@ namespace Cheng.EasyBooks
     /// easybook章节流
     /// </summary>
     /// <remarks>
-    /// <para>逐行读取的章节内容的读取器</para>
+    /// <para>逐行读取章节内容的读取器</para>
     /// </remarks>
     public sealed class ChapterStream : SafreleaseUnmanagedResources
     {

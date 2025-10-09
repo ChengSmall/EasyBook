@@ -59,37 +59,52 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="CSharpTemplates">
-      <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\CSharpTemplates.dll</HintPath>
+      <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>E:\备份\DLL\zip\SharpZipLib.1.4.2\lib\netstandard2.0\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="NetFrameworkTemplate">
       <HintPath>..\..\CSharpTemplatesGit\order\NetFrameworkTemplate4.6.2\bin\Release\NetFrameworkTemplate.dll</HintPath>
     </Reference>
     <Reference Include="System">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Core">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.IO.Compression">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.CSharp">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Data">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Deployment">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Drawing">
-      <Private>True</Private>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>E:\备份\DLL\exd\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>E:\备份\DLL\exd\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>E:\备份\DLL\exd\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml">
-      <Private>True</Private>
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>

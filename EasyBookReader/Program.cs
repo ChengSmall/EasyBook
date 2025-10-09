@@ -25,11 +25,12 @@ namespace Cheng
             Application.SetCompatibleTextRenderingDefault(false);
             Control.CheckForIllegalCrossThreadCalls = false;
             InitArgs.Init(args);
-           
-            Application.Run(new MainForm());
-            //InitArgs.Args.DisposeObject(true);
 
-            
+            using (MainForm form = new MainForm())
+            {
+                Application.Run(form);
+            }
+            //InitArgs.Args.DisposeObject(true);
         }
 
     }

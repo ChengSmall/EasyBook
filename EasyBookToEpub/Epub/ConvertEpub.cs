@@ -9,6 +9,11 @@ using System.Globalization;
 using Cheng.Algorithm.Trees;
 using Cheng.Algorithm.Collections;
 using Cheng.DataStructure.Collections;
+using ICSharpCode.SharpZipLib.Zip;
+using ICSharpCode.SharpZipLib;
+
+using CZipFile = ICSharpCode.SharpZipLib.Zip.ZipFile;
+using Cheng.DataStructure.SharpZipLibDLL;
 
 namespace Cheng.EasyBooks
 {
@@ -196,21 +201,50 @@ namespace Cheng.EasyBooks
         public static void CreateEpubZip(ZipArchive zip)
         {
             //创建头
-            var mimetype = zip.CreateEntry("mimetype", CompressionLevel.NoCompression);
-
-            using (var openS = mimetype.Open())
+            if (zip.Mode == ZipArchiveMode.Update)
             {
-                var bs = Encoding.ASCII.GetBytes("application/epub+zip");
-                openS.Write(bs, 0, bs.Length);
+                var en = zip.GetEntry("mimetype");
+                if (en is null)
+                {
+                    var mimetype = zip.CreateEntry("mimetype", CompressionLevel.NoCompression);
+                    using (var openS = mimetype.Open())
+                    {
+                        var bs = Encoding.ASCII.GetBytes("application/epub+zip");
+                        openS.Write(bs, 0, bs.Length);
+                    }
+                }
             }
-
+            else
+            {
+                var mimetype = zip.CreateEntry("mimetype", CompressionLevel.NoCompression);
+                using (var openS = mimetype.Open())
+                {
+                    var bs = Encoding.ASCII.GetBytes("application/epub+zip");
+                    openS.Write(bs, 0, bs.Length);
+                }
+            }
             //创建 container
-            var cont = zip.CreateEntry("META-INF/container.xml");
+            f_createEpubZipNext(zip);
+        }
+
+        static void f_createEpubZipNext(ZipArchive zip)
+        {
+            var cont = zip.CreateEntry("META-INF\\container.xml");
             XmlDocument xml;
             using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
             {
                 xml = CreateContainer();
                 xml.Save(swr);
+            }
+        }
+
+        public static void CreateEpubHeader(Stream stream)
+        {
+            using (CZipFile zip = new CZipFile(stream, true, StringCodec.FromEncoding(Encoding.UTF8)))
+            {
+                zip.BeginUpdate();
+                zip.Add(new BytesDataSource(Encoding.ASCII.GetBytes("application/epub+zip")), "mimetype", CompressionMethod.Stored);
+                zip.CommitUpdate();
             }
         }
 
@@ -223,7 +257,7 @@ namespace Cheng.EasyBooks
         {
             if (zip is null || easybook is null) throw new ArgumentNullException();
 
-            var cont = zip.CreateEntry(@"OEBPS/content.opf");
+            var cont = zip.CreateEntry(@"OEBPS\content.opf");
 
             using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
             {
