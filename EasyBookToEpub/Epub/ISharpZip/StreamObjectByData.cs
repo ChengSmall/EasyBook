@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using ICSharpCode.SharpZipLib.Zip;
 
-namespace Cheng.Algorithm.Compressions.SharpZipLibDLL
+namespace Cheng.Algorithm.Compressions.SharpZipLibDLL.EasyBookToEpub
 {
 
     /// <summary>

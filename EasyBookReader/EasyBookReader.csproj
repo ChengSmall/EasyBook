@@ -177,11 +177,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EasyBookToEpub\EasyBookToEpub.csproj">
-      <Project>{02554e9c-74c3-4c76-bc14-e7e86fb9a8eb}</Project>
+      <Project>{11c1d1e8-b117-444b-b48b-ccffca42d85a}</Project>
       <Name>EasyBookToEpub</Name>
     </ProjectReference>
     <ProjectReference Include="..\EasyBook\EasyBook.csproj">
-      <Project>{f982769b-1f12-42aa-a31d-fc7b681132b5}</Project>
+      <Project>{c04f0258-c5f2-44c7-b360-335f9f1edd76}</Project>
       <Name>EasyBook</Name>
     </ProjectReference>
   </ItemGroup>

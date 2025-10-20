@@ -3,13 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.33529.622
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyBook", "EasyBook\EasyBook.csproj", "{F982769B-1F12-42AA-A31D-FC7B681132B5}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestProgram", "TestProgram\TestProgram.csproj", "{F595DFCD-5636-4991-B81A-D5FDFCD51E88}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyBookReader", "EasyBookReader\EasyBookReader.csproj", "{A3F353EE-622B-4F9F-ABD9-07663F638F5E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyBookToEpub", "EasyBookToEpub\EasyBookToEpub.csproj", "{02554E9C-74C3-4C76-BC14-E7E86FB9A8EB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyBook", "EasyBook\EasyBook.csproj", "{C04F0258-C5F2-44C7-B360-335F9F1EDD76}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EasyBookToEpub", "EasyBookToEpub\EasyBookToEpub.csproj", "{11C1D1E8-B117-444B-B48B-CCFFCA42D85A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F982769B-1F12-42AA-A31D-FC7B681132B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F982769B-1F12-42AA-A31D-FC7B681132B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F982769B-1F12-42AA-A31D-FC7B681132B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F982769B-1F12-42AA-A31D-FC7B681132B5}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F595DFCD-5636-4991-B81A-D5FDFCD51E88}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F595DFCD-5636-4991-B81A-D5FDFCD51E88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F595DFCD-5636-4991-B81A-D5FDFCD51E88}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -29,10 +25,14 @@ Global
 		{A3F353EE-622B-4F9F-ABD9-07663F638F5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A3F353EE-622B-4F9F-ABD9-07663F638F5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A3F353EE-622B-4F9F-ABD9-07663F638F5E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{02554E9C-74C3-4C76-BC14-E7E86FB9A8EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{02554E9C-74C3-4C76-BC14-E7E86FB9A8EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{02554E9C-74C3-4C76-BC14-E7E86FB9A8EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{02554E9C-74C3-4C76-BC14-E7E86FB9A8EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C04F0258-C5F2-44C7-B360-335F9F1EDD76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C04F0258-C5F2-44C7-B360-335F9F1EDD76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C04F0258-C5F2-44C7-B360-335F9F1EDD76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C04F0258-C5F2-44C7-B360-335F9F1EDD76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11C1D1E8-B117-444B-B48B-CCFFCA42D85A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11C1D1E8-B117-444B-B48B-CCFFCA42D85A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11C1D1E8-B117-444B-B48B-CCFFCA42D85A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11C1D1E8-B117-444B-B48B-CCFFCA42D85A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

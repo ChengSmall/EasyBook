@@ -26,7 +26,7 @@ using CTNodeD = Cheng.DataStructure.Collections.TreeNode<Cheng.Algorithm.Trees.T
 
 using STreeNode = System.Windows.Forms.TreeNode;
 using System.Reflection;
-using Cheng.Algorithm.Compressions.SharpZipLibDLL;
+using Cheng.Algorithm.Compressions.SharpZipLibDLL.EasyBookToEpub;
 
 namespace Cheng.EasyBooks.WinForms
 {

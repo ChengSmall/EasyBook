@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Cheng.DataStructure.SharpZipLibDLL
+namespace Cheng.DataStructure.SharpZipLibDLL.EasyBookToEpub
 {
 
     /// <summary>

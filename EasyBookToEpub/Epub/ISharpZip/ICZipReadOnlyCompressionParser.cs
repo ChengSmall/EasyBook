@@ -16,7 +16,7 @@ using Cheng.Memorys;
 using Cheng.Texts;
 using Cheng.Streams;
 
-namespace Cheng.Algorithm.Compressions.SharpZipLibDLL
+namespace Cheng.Algorithm.Compressions.SharpZipLibDLL.EasyBookToEpub
 {
 
     /// <summary>

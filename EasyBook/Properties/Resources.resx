@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -119,18 +119,14 @@
   </resheader>
   <data name="Exception_ArgsFormatError" xml:space="preserve">
     <value>给定参数不属于easybook的文本行参数</value>
-    <comment>异常消息：参数格式不正确</comment>
   </data>
   <data name="Exception_EasybookStructureError" xml:space="preserve">
     <value>结构不属于easybook标准</value>
-    <comment>异常消息：结构不属于easybook标准</comment>
   </data>
   <data name="Exception_JsonFormatError" xml:space="preserve">
     <value>Json对象格式不是easybook提供的格式</value>
-    <comment>异常消息：Json对象格式不是easybook提供的格式</comment>
   </data>
   <data name="Exception_TreeNodeNotOnEasybook" xml:space="preserve">
     <value>节点参数不属于easybook内部参数</value>
-    <comment>异常消息：节点参数不属于easybook内部参数</comment>
   </data>
 </root>

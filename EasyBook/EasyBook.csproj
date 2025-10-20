@@ -1,76 +1,54 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F982769B-1F12-42AA-A31D-FC7B681132B5}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Cheng</RootNamespace>
     <AssemblyName>EasyBook</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
-    <TargetFrameworkProfile />
+    <Authors>Cheng</Authors>
+    <Company>Cheng</Company>
+    <Description>EasyBook 代码库</Description>
+    <Copyright>Cheng © 2025</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <OutputPath>bin\Debug\</OutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants />
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <OutputPath>bin\Release\</OutputPath>
     <DocumentationFile>bin\Release\EasyBook.xml</DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup>
-    <StartupObject />
-  </PropertyGroup>
+
   <ItemGroup>
-    <None Include="App.config" />
+    <Reference Include="CSharpTemplates">
+      <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="EasyBooks\Chapter.cs" />
-    <Compile Include="EasyBooks\ChapterComparer.cs" />
-    <Compile Include="EasyBooks\EasyBook.cs" />
-    <Compile Include="EasyBooks\EasyBookExtend.cs" />
-    <Compile Include="EasyBooks\EasyBookHeader.cs" />
-    <Compile Include="EasyBooks\Volumes.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="CSharpTemplates">
-      <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="System" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>del /q "$(TargetDir)*.config"</PostBuildEvent>
-  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Release&quot; (&#xD;&#xA;del /q &quot;$(TargetDir)*.config&quot;&#xD;&#xA;copy /b /y &quot;$(TargetPath)&quot; &quot;$(ProjectDir)bin\$(ConfigurationName)&quot;&#xD;&#xA;)" />
+  </Target>
+
 </Project>
