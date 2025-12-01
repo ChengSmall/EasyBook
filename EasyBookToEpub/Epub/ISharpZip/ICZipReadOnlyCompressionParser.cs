@@ -425,7 +425,7 @@ namespace Cheng.Algorithm.Compressions.SharpZipLibDLL.EasyBookToEpub
 
         public override void SortInformationIndex(IComparer comparer, int index, int count)
         {
-            p_list.Sort(index, count, comparer);
+            p_list.Sort(comparer, index, count);
         }
 
         public override void SortInformationIndex(IComparer<DataInformation> comparer)

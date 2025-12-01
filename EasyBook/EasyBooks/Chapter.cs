@@ -108,6 +108,14 @@ namespace Cheng.EasyBooks
         #region 功能
 
         /// <summary>
+        /// 当前行数据类型是否为空行
+        /// </summary>
+        public bool IsEmpty
+        {
+            get => type == ChapterLineType.Empty;
+        }
+
+        /// <summary>
         /// 表示一个空行
         /// </summary>
         public static ChapterLine EmptyLine => new ChapterLine();
@@ -787,7 +795,7 @@ namespace Cheng.EasyBooks
             {
                 return ChapterLine.TextToChapterLine(line);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 throw new NotImplementedException(ex.Message, ex);
             }
