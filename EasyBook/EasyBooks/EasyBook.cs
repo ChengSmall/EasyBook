@@ -107,7 +107,7 @@ namespace Cheng.EasyBooks
             {
                 p_packCanOpenStream = true;
             }
-            else if (p_pack.CanDeCompressionByPath)
+            else if (!p_pack.CanDeCompressionByPath)
             {
                 throw new NotSupportedException();
             }
@@ -132,13 +132,14 @@ namespace Cheng.EasyBooks
 
                 //初始化解析器
                 p_jsonParser = new JsonParserDefault();
+                p_jsonParser.ParserMaxDepth = 512;
 
                 JsonVariable headerJson;
                 //读取头
 
                 headerJson = f_getJsonDataByPath(HeaderPath);
                 p_header = EasyBookHeader.JsonToEasyBookHeader(headerJson);
-                p_header.coverImage = f_getCoverPath();
+                if(string.IsNullOrEmpty(p_header.coverImage)) p_header.coverImage = f_getCoverPath();
 
                 //获取text节点
                 TreeNodeFindFunc nodeEQfunc = new TreeNodeFindFunc(TextRootFolder, false);

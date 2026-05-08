@@ -158,10 +158,7 @@ namespace Cheng.EasyBooks
                             }
 
                         }
-                        //foreach (var lineSys in sysArr)
-                        //{
-                        //    sBuf.AppendLine(lineSys.String);
-                        //}
+
                         header.synopsis = sBuf.ToString();
                     }
                     else if(json.DataType == JsonType.String)
@@ -180,18 +177,22 @@ namespace Cheng.EasyBooks
                         if(customObj.Count != 0)
                         {
                             //有自定义标签
-                            var cstags = new Dictionary<string, string>(customObj.Count);
+                            var cstags = new Dictionary<string, string>(customObj.Count, StringComparer.Ordinal);
 
                             foreach (var customTag in customObj)
                             {
-                                cstags.Add(customTag.Key, customTag.Value.String);
+                                try
+                                {
+                                    cstags[customTag.Key] = customTag.Value.String;
+                                }
+                                catch (Exception)
+                                {
+                                }
                             }
-
-                            header.customs = cstags.ToArray();
+                            if (cstags.Count > 0) header.customs = cstags.ToArray();
+                            else header.customs = null;
                         }
-
                     }
-
                 }
 
                 if (headRoot.TryGetValue("cover", out json))
@@ -200,6 +201,18 @@ namespace Cheng.EasyBooks
                     {
 
                         var coverObj = json.JsonObject;
+
+                        if (coverObj.TryGetValue("path", out json))
+                        {
+                            if (json.DataType == JsonType.String)
+                            {
+                                header.coverImage = json.String;
+                            }
+                            else
+                            {
+                                header.coverImage = null;
+                            }
+                        }
 
                         Cover cover = default;
                         json = coverObj["width"];
@@ -236,8 +249,6 @@ namespace Cheng.EasyBooks
                 throw new NotImplementedException(ex.Message, ex);
             }
 
-
-            
         }
 
         /// <summary>
@@ -248,12 +259,13 @@ namespace Cheng.EasyBooks
         /// <returns>如果是字符串类型json则成功转化并返回true</returns>
         public static bool JsonToString(JsonVariable json, out string reValue)
         {
-            if ((json?.DataType).GetValueOrDefault(JsonType.Null) == JsonType.String)
+            reValue = null;
+            if (json is null) return false;
+            if (json.DataType == JsonType.String)
             {
                 reValue = json.String;
                 return true;
             }
-            reValue = null;
             return false;
         }
 
