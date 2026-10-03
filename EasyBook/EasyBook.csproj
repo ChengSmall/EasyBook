@@ -28,7 +28,6 @@
   <ItemGroup>
     <Reference Include="CSharpTemplates">
       <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
-      <Private>false</Private>
     </Reference>
   </ItemGroup>
 

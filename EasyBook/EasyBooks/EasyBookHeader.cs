@@ -206,33 +206,35 @@ namespace Cheng.EasyBooks
                         {
                             if (json.DataType == JsonType.String)
                             {
-                                header.coverImage = json.String;
+                                header.coverImage = Path.Combine("image", json.String);
                             }
                             else
                             {
                                 header.coverImage = null;
                             }
                         }
+                        bool cancv = false;
+                        Cover cover = new Cover(1, 1);
+                        if (coverObj.TryGetValue("width", out var widthJson))
+                        {
+                            if (widthJson.IsNumberType)
+                            {
+                                cover.width = (float)widthJson.GetNumber();
+                                cancv = true;
+                            }
+                        }
 
-                        Cover cover = default;
-                        json = coverObj["width"];
-                        if(json.DataType == JsonType.Integer)
+                        if (coverObj.TryGetValue("height", out var heightJson))
                         {
-                            cover.width = json.Integer;
+                            if (heightJson.IsNumberType)
+                            {
+                                cover.height = (float)widthJson.GetNumber();
+                                cancv = true;
+                            }
                         }
-                        else
+                        if (cancv)
                         {
-                            cover.width = (float)json.RealNum;
-                        }
-
-                        json = coverObj["height"];
-                        if (json.DataType == JsonType.Integer)
-                        {
-                            cover.height = json.Integer;
-                        }
-                        else
-                        {
-                            cover.height = (float)json.RealNum;
+                            header.cover = cover;
                         }
                     }
                 }

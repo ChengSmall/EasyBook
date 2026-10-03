@@ -547,12 +547,6 @@ namespace Cheng.EasyBooks.WinForms
         private void fe_Click_Button_Test(object sender, EventArgs e)
         {
 
-            //Console.Clear();
-            //print(Col_Rtf_BookText.Rtf);
-            //STreeNode node = new STreeNode("text");
-            //print($"Text:{node.Text}");
-            //print($"Name:{node.Name}");
-
         }
 
         #endregion
@@ -1105,7 +1099,7 @@ namespace Cheng.EasyBooks.WinForms
         #endregion
 
         #region 显示信息
-        
+
         /// <summary>
         /// 文本框显示初始页面
         /// </summary>
@@ -1218,7 +1212,6 @@ namespace Cheng.EasyBooks.WinForms
 
                 }
 
-                
             }
 
             rtf.AppendText(sb.ToString());
@@ -1481,15 +1474,11 @@ namespace Cheng.EasyBooks.WinForms
         /// <param name="node"></param>
         private void f_OpenVolumeToTextByRtf(STreeNode node)
         {
-            if(p_easyBook is null)
+            if (p_easyBook is null)
             {
                 printl("没有easybook数据");
                 return;
             }
-            //clearPrint();
-            //print("FullPath:" + node.FullPath);
-            //print("Name:" + node.Name);
-            //print("Index:" + node.Index);
 
             if (node.Nodes.Count != 0)
             {
@@ -1512,28 +1501,19 @@ namespace Cheng.EasyBooks.WinForms
 
             try
             {
+                var cs = p_easyBook.CreateChapter(path);
+                int count = cs.Count;
                 Col_Rtf_BookText.Clear();
-                using (var cs = p_easyBook.CreateChapterStream(path))
+                var cplist = cs.ChapterLines;
+                for (int i = 0; i < count; i++)
                 {
-                    int count = 0;
-                    while (true)
-                    {
-                        var line = cs.ReadLine();
-
-                        if (!line.HasValue)
-                        {
-                            if(count == 0)
-                            {
-                                Col_Rtf_BookText.AppendText("<[空章节]>");
-                            }
-                            break;
-                        }
-
-                        f_appendTextLine(Col_Rtf_BookText, line.Value);
-                        count++;
-                    }
+                    var line = cplist[i];
+                    f_appendTextLine(Col_Rtf_BookText, line);
                 }
-
+                if (count == 0)
+                {
+                    Col_Rtf_BookText.AppendText("<[空章节]>");
+                }
             }
             catch (Exception ex)
             {

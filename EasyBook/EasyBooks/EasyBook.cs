@@ -69,7 +69,7 @@ namespace Cheng.EasyBooks
 
         #endregion
 
-        #region
+        #region 构造
 
         /// <summary>
         /// 初始化easybook读取器
@@ -103,6 +103,7 @@ namespace Cheng.EasyBooks
         private void f_init()
         {
             p_packCanOpenStream = false;
+            p_bufferStream = null;
             if (p_pack.CanOpenCompressedStreamByPath)
             {
                 p_packCanOpenStream = true;
@@ -282,11 +283,13 @@ namespace Cheng.EasyBooks
 
         }
 
+#if DEBUG
         /// <summary>
         /// 读取路径数据下第一行
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
+#endif
         private string f_readFirstLine(string path)
         {
             if (p_packCanOpenStream)
@@ -304,21 +307,13 @@ namespace Cheng.EasyBooks
                 MemoryStream open = p_bufferStream;
                 open.Seek(0, SeekOrigin.Begin);
                 open.SetLength(0);
-                //if ()
-                //{
-                    
-                //}
-                //else
-                //{
 
-                //}
                 p_pack.DeCompressionTo(path, open);
                 open.Seek(0, SeekOrigin.Begin);
                 using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 3 * 32, true))
                 {
                     return sr.ReadLine();
                 }
-
             }
         }
 
@@ -357,58 +352,78 @@ namespace Cheng.EasyBooks
 
         #region 参数
 
+#if DEBUG
         /// <summary>
         /// 书籍头
         /// </summary>
+#endif
         private EasyBookHeader p_header;
 
+#if DEBUG
         /// <summary>
         /// 数据读取器
         /// </summary>
+#endif
         private BaseCompressionParser p_pack;
 
+#if DEBUG
         /// <summary>
         /// 读取器数据的树状节点
         /// </summary>
+#endif
         private TreeNode<TreeNodeData> p_root;
 
+#if DEBUG
         /// <summary>
         /// 分卷结构，此实例是根分卷节点，Value为null时，不再有子分卷
         /// </summary>
+#endif
         private TreeNode<Volume> p_volumeRoot;
 
+#if DEBUG
         /// <summary>
         /// 书籍数据根目录
         /// </summary>
+#endif
         private TreeNode<TreeNodeData> p_textRoot;
 
+#if DEBUG
         /// <summary>
         /// 图像数据存储根目录，null表示不存在
         /// </summary>
+#endif
         private TreeNode<TreeNodeData> p_imageRoot;
 
+#if DEBUG
         /// <summary>
         /// json解析器
         /// </summary>
+#endif
         private JsonParserDefault p_jsonParser;
 
         private StringBuilder p_strBuffer;
 
         private ChapterIndexComparer p_chapterComparer;
 
+#if DEBUG
         /// <summary>
         /// 路径分隔符集合
         /// </summary>
+#endif
         private char[] p_pathSeparator;
 
+#if DEBUG
         /// <summary>
         /// 如果没有流打开权限，则此实例有用
         /// </summary>
+#endif
         private MemoryStream p_bufferStream;
 
+#if DEBUG
         /// <summary>
         /// true表示有打开流的权限，false只有解数据权限
         /// </summary>
+#endif
         private bool p_packCanOpenStream;
 
         private bool p_onDispose;
@@ -436,11 +451,13 @@ namespace Cheng.EasyBooks
 
         #region 封装
 
+#if DEBUG
         /// <summary>
         /// 从路径读取数据并转化为json
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
+#endif
         private JsonVariable f_getJsonDataByPath(string path)
         {
             JsonVariable json;
@@ -469,11 +486,13 @@ namespace Cheng.EasyBooks
             return json;
         }
 
+#if DEBUG
         /// <summary>
         /// 按照路径返回节点
         /// </summary>
         /// <param name="path">一个数据路径或文件夹路径</param>
         /// <returns>节点</returns>
+#endif
         private TreeNode<TreeNodeData> f_PathGetNode(string path)
         {
             TreeNodeFindFunc nodeFind;
@@ -636,6 +655,44 @@ namespace Cheng.EasyBooks
         }
 
         /// <summary>
+        /// 封面图像数据解析的自定义用户数据对象
+        /// </summary>
+        /// <param name="parserImageFunc">一个回调函数，表示要从流对象中解析图像数据的方法；回调参数表示easybook封面图像数据，如果回调参数是null，则表示没有图像数据</param>
+        /// <returns>从<paramref name="parserImageFunc"/>获取的用户数据</returns>
+        /// <exception cref="ArgumentNullException">参数是null</exception>
+        public object GetConverImageData(Func<Stream, object> parserImageFunc)
+        {
+            if (parserImageFunc is null) throw new ArgumentNullException();
+            if (string.IsNullOrEmpty(p_header.coverImage))
+            {
+                return parserImageFunc.Invoke(null);
+            }
+
+            Stream open;
+            if (p_packCanOpenStream)
+            {
+                open = p_pack.OpenCompressedStream(p_header.coverImage);
+            }
+            else
+            {
+                open = p_bufferStream;
+                open.Seek(0, SeekOrigin.Begin);
+                open.SetLength(0);
+                p_pack.DeCompressionTo(p_header.coverImage, open);
+                open.Seek(0, SeekOrigin.Begin);
+            }
+
+            try
+            {
+                return parserImageFunc.Invoke(open);
+            }
+            finally
+            {
+                open.Close();
+            }
+        }
+
+        /// <summary>
         /// 按照章节头创建一个easybook章节
         /// </summary>
         /// <param name="chapterIndex">章节头</param>
@@ -667,6 +724,7 @@ namespace Cheng.EasyBooks
                 {
                     open.SetLength(0);
                     open.Seek(0, SeekOrigin.Begin);
+                    p_pack.DeCompressionTo(chapterIndex.chapterFilePath, open);
                     using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 1024, true))
                     {
                         return Chapter.CreateChapter(sr);
@@ -690,13 +748,12 @@ namespace Cheng.EasyBooks
         public ChapterStream CreateChapterStream(ChapterIndex chapterIndex)
         {
             ThrowObjectDisposeException();
-
+            Stream open;
             if (p_packCanOpenStream)
             {
-                Stream open = null;
+                open = p_pack.OpenCompressedStream(chapterIndex.chapterFilePath);
                 try
                 {
-                    open = p_pack.OpenCompressedStream(chapterIndex.chapterFilePath);
                     if (open is null) throw new NotImplementedException();
 
                     StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 1024, false);
@@ -707,9 +764,7 @@ namespace Cheng.EasyBooks
                     open?.Close();
                     throw;
                 }
-               
             }
-
             throw new NotSupportedException();
         }
 
@@ -750,7 +805,6 @@ namespace Cheng.EasyBooks
                         return Chapter.CreateChapter(sr);
                     }
                 }
-
             }
         }
 
@@ -828,3 +882,5 @@ namespace Cheng.EasyBooks
     }
 
 }
+#if DEBUG
+#endif

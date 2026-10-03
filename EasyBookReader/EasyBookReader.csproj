@@ -65,7 +65,7 @@
       <HintPath>E:\备份\DLL\zip\SharpZipLib.1.4.2\lib\netstandard2.0\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="NetFrameworkTemplate">
-      <HintPath>..\..\CSharpTemplatesGit\order\NetFrameworkTemplate4.6.2\bin\Release\NetFrameworkTemplate.dll</HintPath>
+      <HintPath>..\..\CSharpTemplatesGit\order\NetFrameworkTemplate\bin\Release\NetFrameworkTemplate.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Private>False</Private>

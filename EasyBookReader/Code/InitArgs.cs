@@ -1,5 +1,4 @@
 using Cheng.Streams.Parsers;
-using Cheng.Streams.Parsers.Default;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -181,8 +180,10 @@ namespace Cheng
 
         private void f_initDebugStream()
         {
+            //#if DEBUG
             //debugLogPrint = Console.Out;
             //return;
+            //#endif
 
             if (!isOpenDebug) return;
 
@@ -570,7 +571,6 @@ namespace Cheng
 
             return re;
         }
-
 
         #endregion
 
