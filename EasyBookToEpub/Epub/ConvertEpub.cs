@@ -9,11 +9,8 @@ using System.Globalization;
 using Cheng.Algorithm.Trees;
 using Cheng.Algorithm.Collections;
 using Cheng.DataStructure.Collections;
-using ICSharpCode.SharpZipLib.Zip;
-using ICSharpCode.SharpZipLib;
-
-using CZipFile = ICSharpCode.SharpZipLib.Zip.ZipFile;
-using Cheng.DataStructure.SharpZipLibDLL;
+using Cheng.DataStructure;
+using Cheng.Algorithm.Compressions.ZipPackagings;
 
 namespace Cheng.EasyBooks
 {
@@ -238,14 +235,16 @@ namespace Cheng.EasyBooks
             }
         }
 
+        /// <summary>
+        /// 创建一个epub头的zip包
+        /// </summary>
+        /// <param name="stream"></param>
         public static void CreateEpubHeader(Stream stream)
         {
-            using (CZipFile zip = new CZipFile(stream, true, StringCodec.FromEncoding(Encoding.UTF8)))
-            {
-                zip.BeginUpdate();
-                zip.Add(new BytesDataSource(Encoding.ASCII.GetBytes("application/epub+zip")), "mimetype", CompressionMethod.Stored);
-                zip.CommitUpdate();
-            }
+            var zippack = new ZipPackagingOperation();
+            var getbytes = new GettingMemoryStream(Encoding.ASCII.GetBytes("application/epub+zip"));
+            zippack.SetDataItem(getbytes, "application/epub+zip", ZipItemPackType.Stored);
+            zippack.PackTo(stream);
         }
 
         /// <summary>
@@ -516,8 +515,6 @@ namespace Cheng.EasyBooks
             var vols = ebk.VolumeRoot;
 
             const string rootPath = "OEBPS";
-
-            //ebk.GetFullNameByImagePath("");
 
             var header = ebk.Header;
             var pack = ebk.BaseDataPack;

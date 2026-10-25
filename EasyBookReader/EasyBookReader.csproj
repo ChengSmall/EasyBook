@@ -61,8 +61,8 @@
     <Reference Include="CSharpTemplates">
       <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
     </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>E:\备份\DLL\zip\SharpZipLib.1.4.2\lib\netstandard2.0\ICSharpCode.SharpZipLib.dll</HintPath>
+    <Reference Include="CSharpWindowsAPI">
+      <HintPath>..\..\CSharpTemplatesGit\order\CSharpWindowsAPI\bin\Release\netstandard2.0\CSharpWindowsAPI.dll</HintPath>
     </Reference>
     <Reference Include="NetFrameworkTemplate">
       <HintPath>..\..\CSharpTemplatesGit\order\NetFrameworkTemplate\bin\Release\NetFrameworkTemplate.dll</HintPath>

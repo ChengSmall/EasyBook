@@ -26,7 +26,7 @@ using CTNodeD = Cheng.DataStructure.Collections.TreeNode<Cheng.Algorithm.Trees.T
 
 using STreeNode = System.Windows.Forms.TreeNode;
 using System.Reflection;
-using Cheng.Algorithm.Compressions.SharpZipLibDLL.EasyBookToEpub;
+using Cheng.Algorithm.Compressions.ZipDataParser;
 
 namespace Cheng.EasyBooks.WinForms
 {
@@ -890,8 +890,13 @@ namespace Cheng.EasyBooks.WinForms
 
                     try
                     {
-                        //bookData = new ZipArchiveCompress(fileStream, ZipArchiveMode.Read, 1024 * 4, true, Encoding.UTF8);
-                        bookData = new ICZipReadOnlyCompressionParser(fileStream, true, 8192, Encoding.UTF8);
+                        if (!IOoperations.File.CheckZIP(fileStream))
+                        {
+                            fileStream?.Close();
+                            return -2;
+                        }
+                        fileStream.Seek(0, SeekOrigin.Begin);
+                        bookData = new ZipDataCompressionParser(fileStream, true, null, null);
                     }
                     catch (Exception)
                     {

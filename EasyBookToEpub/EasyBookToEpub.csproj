@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Release&quot; (&#xD;&#xA;del /q &quot;$(TargetDir)*.config&quot;&#xD;&#xA;copy /b /y &quot;$(TargetPath)&quot; &quot;$(ProjectDir)bin\$(ConfigurationName)&quot;&#xD;&#xA;)" />
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Release&quot; (&#xD;&#xA;copy /b /y &quot;$(TargetPath)&quot; &quot;$(ProjectDir)bin\$(ConfigurationName)&quot;&#xD;&#xA;)" />
   </Target>
 
   <ItemGroup>
@@ -34,22 +34,6 @@
   <ItemGroup>
     <Reference Include="CSharpTemplates">
       <HintPath>..\..\CSharpTemplatesGit\order\CSharpTemplates\bin\Release\netstandard2.0\CSharpTemplates.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>E:\备份\DLL\zip\SharpZipLib.1.4.2\lib\netstandard2.0\ICSharpCode.SharpZipLib.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="System.Memory">
-      <HintPath>E:\备份\DLL\exd\System.Memory.4.6.3\lib\netstandard2.0\System.Memory.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe">
-      <HintPath>E:\备份\DLL\exd\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="System.Threading.Tasks.Extensions">
-      <HintPath>E:\备份\DLL\exd\System.Threading.Tasks.Extensions.4.5.4\lib\netstandard2.0\System.Threading.Tasks.Extensions.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
