@@ -49,6 +49,7 @@ namespace Cheng.EasyBooks.WinForms
             p_easyBook = null;
             p_jsonParser = new JsonParserDefault();
             p_StreamBuffer = new MemoryStream();
+            p_utf8enc = new UTF8Encoding(false, true);
         }
 
         private void f_init()
@@ -138,6 +139,8 @@ namespace Cheng.EasyBooks.WinForms
         private MemoryStream p_StreamBuffer;
 
         private PreferencesWindow p_preferencesWindow;
+
+        private UTF8Encoding p_utf8enc;
 
         #endregion
 
@@ -858,7 +861,7 @@ namespace Cheng.EasyBooks.WinForms
             try
             {
                 //使用json解析器尝试解析判断是否为json文件
-                p_jsonParser.FileToJson(path);
+                p_jsonParser.FileToJson(path, p_utf8enc);
                 isJsonFile = true;
             }
             catch (Exception)
@@ -896,7 +899,7 @@ namespace Cheng.EasyBooks.WinForms
                             return -2;
                         }
                         fileStream.Seek(0, SeekOrigin.Begin);
-                        bookData = new ZipDataCompressionParser(fileStream, true, null, null);
+                        bookData = new ZipDataCompressionParser(fileStream, true, null, null, null, true);
                     }
                     catch (Exception)
                     {
