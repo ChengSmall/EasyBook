@@ -296,7 +296,7 @@ namespace Cheng.EasyBooks
             {
                 using (var open = p_pack.OpenCompressedStream(path))
                 {
-                    using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 3 * 32, true))
+                    using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 256, true))
                     {
                         return sr.ReadLine();
                     }
@@ -310,7 +310,7 @@ namespace Cheng.EasyBooks
 
                 p_pack.DeCompressionTo(path, open);
                 open.Seek(0, SeekOrigin.Begin);
-                using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 3 * 32, true))
+                using (StreamReader sr = new StreamReader(open, Encoding.UTF8, false, 256, true))
                 {
                     return sr.ReadLine();
                 }

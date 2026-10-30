@@ -1,4 +1,3 @@
-using Cheng.Algorithm.Compressions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,13 +5,18 @@ using System.Text;
 using System.Xml;
 using System.IO.Compression;
 using System.Globalization;
+
 using Cheng.Algorithm.Trees;
 using Cheng.Algorithm.Collections;
+using Cheng.Algorithm.Compressions;
 using Cheng.DataStructure.Collections;
 using Cheng.DataStructure;
 using Cheng.Algorithm.Compressions.ZipPackagings;
+using Cheng.DataStructure.Uuids;
+using Cheng.Algorithm.Randoms;
+using Cheng.Texts;
 
-namespace Cheng.EasyBooks
+namespace Cheng.EasyBooks.ToEpubs
 {
 
     /// <summary>
@@ -24,18 +28,34 @@ namespace Cheng.EasyBooks
 
         #region 创建epub结构
 
+        #region 常量
+
         /// <summary>
         /// 路径分隔符
         /// </summary>
         public const char pathSeparator = '/';
 
+        internal const string EbkToEpubRootPtah = "OEBPS";
+
+        internal const string EbkToEpubTextPtah = "OEBPS/text";
+
+        internal const string EbkToEpubImagePtah = "OEBPS/image";
+
+        internal const string EpubChapterFileExtension = ".xhtml";
+
+        internal static string EpubSynopsisText => "synopsis";
+
+        internal const string EpubXHtmlRootNamespace = "http://www.w3.org/1999/xhtml";
+
+        #endregion
+
         /// <summary>
         /// 从ebk创建epub结构到zip
         /// </summary>
         /// <param name="ebk">easybook</param>
-        /// <param name="zip">空zip</param>
+        /// <param name="zip">zip打包器</param>
         /// <param name="outputLog" >输出日志，null表示没有</param>
-        public static void CreateEpubByEbk(EasyBook ebk, ZipArchive zip, TextWriter outputLog)
+        public static void CreateEpubByEbk(EasyBook ebk, ZipPackagingOperation zip, TextWriter outputLog)
         {
             if (ebk is null || zip is null) throw new ArgumentNullException();
             if (!ebk.IsNotDispose) throw new ObjectDisposedException("ebk");
@@ -43,9 +63,6 @@ namespace Cheng.EasyBooks
 
             if(print) outputLog.WriteLine("正在创建基础epub结构");
             CreateEpubZip(zip);
-
-            //if (print) outputLog.WriteLine("正在创建基础索引文件");
-            //CreateContainer(zip);
 
             if (print) outputLog.WriteLine("调换资源索引");
             CreateEpubOPF(zip, ebk);
@@ -73,7 +90,7 @@ namespace Cheng.EasyBooks
 
             if (print) outputLog.WriteLine("准备拷贝图像数据");
             CreateEpubImages(zip, ebk, imageCreateAction);
-            
+
             void imageCreateAction(TreeNode<TreeNodeData> imageNode)
             {
                 if (print) outputLog.WriteLine($"拷贝图像:\"{imageNode.Value.dataPath}\"");
@@ -81,7 +98,7 @@ namespace Cheng.EasyBooks
             }
 
             //封面算一张图
-            if (ebk.Header.coverImage is object) imageCount++;
+            if (!string.IsNullOrEmpty(ebk.Header.coverImage)) imageCount++;
 
             if (print) outputLog.WriteLine($"转换成功，共{cpCount}章 {volCount}卷 {imageCount}图");
 
@@ -135,6 +152,7 @@ namespace Cheng.EasyBooks
                     var imgPath = Path.Combine(lsPath, "image", lv.value).pathRepTo();
                     var imgNode = xml.CreateElement("img");
                     imgNode.SetAttribute("src", imgPath);
+                    imgNode.SetAttribute("alt", "imageLine:" + imgPath);
                     body.AppendChild(imgNode);
                 }
 
@@ -146,8 +164,9 @@ namespace Cheng.EasyBooks
         /// <summary>
         /// 创建一个epub章节文件
         /// </summary>
-        /// <param name="xml">要写入的xml空结构</param>
-        /// <param name="chapter">要创建的ebk章节</param>
+        /// <param name="chapter">要创建的ebk章节流</param>
+        /// <param name="ci">与之对应的章节头</param>
+        /// <returns></returns>
         public static XmlDocument CreateEpubChapter(Chapter chapter, ChapterIndex ci)
         {
             if (chapter is null) throw new ArgumentNullException();
@@ -184,6 +203,7 @@ namespace Cheng.EasyBooks
                     var imgPath = Path.Combine(lsPath, "image", lv.value).pathRepTo();
                     var imgNode = xml.CreateElement("img");
                     imgNode.SetAttribute("src", imgPath);
+                    imgNode.SetAttribute("alt", "imageLine");
                     body.AppendChild(imgNode);
                 }
             }
@@ -195,44 +215,19 @@ namespace Cheng.EasyBooks
         /// 为zip创建Epub基础结构
         /// </summary>
         /// <param name="zip">空zip</param>
-        public static void CreateEpubZip(ZipArchive zip)
+        public static void CreateEpubZip(ZipPackagingOperation zip)
         {
             //创建头
-            if (zip.Mode == ZipArchiveMode.Update)
-            {
-                var en = zip.GetEntry("mimetype");
-                if (en is null)
-                {
-                    var mimetype = zip.CreateEntry("mimetype", CompressionLevel.NoCompression);
-                    using (var openS = mimetype.Open())
-                    {
-                        var bs = Encoding.ASCII.GetBytes("application/epub+zip");
-                        openS.Write(bs, 0, bs.Length);
-                    }
-                }
-            }
-            else
-            {
-                var mimetype = zip.CreateEntry("mimetype", CompressionLevel.NoCompression);
-                using (var openS = mimetype.Open())
-                {
-                    var bs = Encoding.ASCII.GetBytes("application/epub+zip");
-                    openS.Write(bs, 0, bs.Length);
-                }
-            }
+            var bs = Encoding.ASCII.GetBytes("application/epub+zip");
+            zip.SetDataItem(new GettingMemoryStream(bs), "mimetype", ZipItemPackType.Stored);
+
             //创建 container
             f_createEpubZipNext(zip);
         }
 
-        static void f_createEpubZipNext(ZipArchive zip)
+        static void f_createEpubZipNext(ZipPackagingOperation zip)
         {
-            var cont = zip.CreateEntry("META-INF\\container.xml");
-            XmlDocument xml;
-            using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
-            {
-                xml = CreateContainer();
-                xml.Save(swr);
-            }
+            zip.SetDataItem(new GettingMemoryStream(CreateContainerBytes()), "META-INF/container.xml", ZipItemPackType.Deflate);
         }
 
         /// <summary>
@@ -248,56 +243,40 @@ namespace Cheng.EasyBooks
         }
 
         /// <summary>
-        /// （epub基础结构）为epub包从ebk创建opf（<see cref="CreateEpubOPF(ZipArchive, EasyBook)"/>后调用）
+        /// （epub基础结构）为epub创建 META-INF/container.xml
         /// </summary>
-        /// <param name="zip">epub包</param>
-        /// <param name="easybook">ebk</param>
-        public static void CreateEpubOPF(ZipArchive zip, EasyBook easybook)
+        /// <param name="zip"></param>
+        public static void CreateContainer(ZipPackagingOperation zip)
         {
-            if (zip is null || easybook is null) throw new ArgumentNullException();
-
-            var cont = zip.CreateEntry(@"OEBPS\content.opf");
-
-            using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
-            {
-                var xml = CreateContent(easybook);
-                xml.Save(swr);
-            }
+            if (zip is null) throw new ArgumentNullException();
+            zip.SetDataItem(new GettingMemoryStream(CreateContainerBytes()), "META-INF/container.xml", ZipItemPackType.Deflate);
         }
 
         /// <summary>
-        /// （epub基础结构）为epub创建 META-INF/container.xml（<see cref="CreateEpubOPF(ZipArchive, EasyBook)"/>后调用）
+        /// （epub基础结构）为epub包从ebk创建opf（<see cref="CreateContainer(ZipPackagingOperation)"/>之后调用）
         /// </summary>
-        /// <param name="zip"></param>
-        public static void CreateContainer(ZipArchive zip)
+        /// <param name="zip">epub包</param>
+        /// <param name="easybook">ebk</param>
+        public static void CreateEpubOPF(ZipPackagingOperation zip, EasyBook easybook)
         {
-            if (zip is null) throw new ArgumentNullException();
+            if (zip is null || easybook is null) throw new ArgumentNullException();
 
-            var cont = zip.CreateEntry(@"META-INF/container.xml");
-
-            using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
-            {
-                var xml = CreateContainer();
-                xml.Save(swr);
-            }
+            var gett = new GettingXmlDocumentStream(CreateContent(easybook));
+            zip.SetDataItem(gett, "OEBPS/content.opf", ZipItemPackType.Deflate);
         }
+
 
         /// <summary>
         /// （epub基础结构）为epub创建 META-INF/toc.ncx（<see cref="CreateEpubOPF(ZipArchive, EasyBook)"/>后调用）
         /// </summary>
         /// <param name="zip"></param>
         /// <param name="ebk"></param>
-        public static void CreateTocEpub(ZipArchive zip, EasyBook ebk)
+        public static void CreateTocEpub(ZipPackagingOperation zip, EasyBook ebk)
         {
             if (zip is null || ebk is null) throw new ArgumentNullException();
 
-            var cont = zip.CreateEntry(@"OEBPS/toc.ncx");
-
-            using (StreamWriter swr = new StreamWriter(cont.Open(), Encoding.UTF8, 1024, false))
-            {
-                var xml = CreateNCX(ebk);
-                xml.Save(swr);
-            }
+            var getter = new GettingXmlDocumentStreamFromEasyBook(CreateNCX, ebk);
+            zip.SetDataItem(getter, "OEBPS/toc.ncx", ZipItemPackType.Deflate);
         }
 
         /// <summary>
@@ -321,16 +300,9 @@ namespace Cheng.EasyBooks
         /// <returns></returns>
         public static XmlDocument CreateEpubChapterHtml(string title, out XmlElement bodyElement)
         {
-            if (title is null) throw new ArgumentNullException();
+            if (title is null) title = string.Empty;
 
             XmlDocument doc = new XmlDocument();
-
-            /*
-            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-                "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-
-            
-            */
 
             var docType = doc.CreateDocumentType("html", "-//W3C//DTD XHTML 1.1//EN", "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd", null);
 
@@ -338,7 +310,7 @@ namespace Cheng.EasyBooks
 
             var root = doc.CreateElement("html");
             
-            root.SetAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+            //root.SetAttribute("xmlns", "http://www.w3.org/1999/xhtml");
 
             doc.AppendChild(root);
 
@@ -351,13 +323,6 @@ namespace Cheng.EasyBooks
             var titleNode = doc.CreateElement("title");
             titleNode.AppendChild(doc.CreateTextNode(title));
             head.AppendChild(titleNode);
-
-            //<link href="../css/style.css" type="text/css" rel="stylesheet"/>
-            //var link = doc.CreateElement("link");
-            //link.SetAttribute("href", @"..\css\style.css");
-            //link.SetAttribute("type", "text\\css");
-            //link.SetAttribute("rel", "stylesheet");
-            //head.AppendChild(link);
 
             var h1Title = doc.CreateElement("h1");
             h1Title.AppendChild(doc.CreateTextNode(title));
@@ -374,19 +339,81 @@ namespace Cheng.EasyBooks
         /// <param name="ebk">ebk书籍</param>
         /// <param name="createChapterAction">创建了zip一个章节后执行，null表示不执行</param>
         /// <param name="createVolumeAction">创建了zip一个分卷后执行，null表示不执行</param>
-        public static void CreateEpubChapters(ZipArchive zip, EasyBook ebk, Action<ChapterIndex> createChapterAction, Action<Volume> createVolumeAction)
+        public static void CreateEpubChapters(ZipPackagingOperation zip, EasyBook ebk, Action<ChapterIndex> createChapterAction, Action<Volume> createVolumeAction)
         {
-            //根目录 OEBPS\text
+
             if (zip is null || ebk is null) throw new ArgumentNullException();
             var vols = ebk.VolumeRoot;
 
-            const string rootPath = "OEBPS";
+            const string rootPath = EbkToEpubRootPtah;
+
+            {
+                var ebkh = ebk.Header;
+                var xmlDoc = CreateEpubChapterHtml(ebkh.name, out var body);
+
+                if (!string.IsNullOrEmpty(ebkh.coverImage))
+                {
+                    //插入封面页
+                    //<img src="OEBPS/image/"/>
+
+                    var imgNode = xmlDoc.CreateElement("img");
+                    //封面路径获取
+                    var imgFilePath = ebkh.coverImage?.pathRepTo();
+                    // epub归档内全局路径
+                    var epubImgFullPath = Path.Combine(rootPath, imgFilePath);
+
+                    // 从OEBPS目录到封面归档目录的相对位置路径
+                    var textToImgPath = TextManipulation.Path.GetRelativeDirectoryByPath(rootPath, epubImgFullPath);
+                    imgNode.SetAttribute("src", textToImgPath);
+                    imgNode.SetAttribute("alt", "coverImage");
+                    body.InsertAfter(imgNode, body.FirstChild);
+
+                    var xmlGetter = new GettingXmlDocumentStream(xmlDoc);
+                    zip.SetDataItem(xmlGetter, Path.Combine(rootPath, "cover" + EpubChapterFileExtension));
+
+                }
+
+                if (!string.IsNullOrEmpty(ebkh.synopsis))
+                {
+                    using (var reader = new NewLineStdTextReader(new StringReader(ebkh.synopsis), true, "\n"))
+                    {
+                        {
+                            var np = xmlDoc.CreateElement("p");
+                            np.AppendChild(xmlDoc.CreateTextNode(EpubSynopsisText + ":"));
+                            body.AppendChild(np);
+                        }
+                        while (true)
+                        {
+                            var line = reader.ReadLine();
+                            if (line is null) break;
+                            var np = xmlDoc.CreateElement("p");
+                            np.AppendChild(xmlDoc.CreateTextNode(line));
+                            body.AppendChild(np);
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(ebkh.publisher))
+                {
+                        var np = xmlDoc.CreateElement("p");
+                        np.AppendChild(xmlDoc.CreateTextNode("© " + ebkh.publisher));
+                        body.AppendChild(np);
+                }
+
+                if (!string.IsNullOrEmpty(ebkh.author))
+                {
+                    var np = xmlDoc.CreateElement("p");
+                    np.AppendChild(xmlDoc.CreateTextNode("--- " + ebkh.author));
+                    body.AppendChild(np);
+                }
+
+            }
 
             foeachDepth(vols, createChapterfunc);
 
             void createChapterfunc(TreeNode<Volume> t_node)
             {
-                
+
                 var volValue = t_node.Value;
 
                 if (volValue.volumeType != VolumeType.Chapters && volValue.volumeType != VolumeType.Node)
@@ -400,8 +427,7 @@ namespace Cheng.EasyBooks
                 string path;
                 XmlElement body;
                 int i;
-                ZipArchiveEntry entry;
-                
+
                 //节点分卷
                 path = getRootPath(t_node);
 
@@ -410,22 +436,12 @@ namespace Cheng.EasyBooks
                 //if (isRootPath) return;
 
                 //路径替换 + 扩展名
-                var tpath = path.pathRepTo() + ".html";
+                var tpath = path.pathRepTo() + EpubChapterFileExtension;
                 tpath = Path.Combine(rootPath, tpath).pathRepTo();
 
                 //创建目录html文件
                 var volXml = CreateEpubChapterHtml(volValue.name, out body);
 
-                if (isRootPath && (ebk.Header.coverImage is object))
-                {
-                    //插入封面
-                    //<img src="../image/0001.jpeg"/>
-                    var imgNode = volXml.CreateElement("img");
-                    //封面路径处于OPS目录下
-                    imgNode.SetAttribute("src", ebk.Header.coverImage.pathRepTo());
-                    body.InsertAfter(imgNode, body.FirstChild);
-
-                }
 
                 if ((volValue.customItems?.Length).GetValueOrDefault() != 0)
                 {
@@ -452,16 +468,8 @@ namespace Cheng.EasyBooks
                     }
                 }
 
-                //创建目录并写入数据
-                entry = zip.CreateEntry(tpath);
-
-                using (var openStream = entry.Open())
-                {
-                    using (StreamWriter swr = new StreamWriter(openStream, Encoding.UTF8, 1024 * 2, true))
-                    {
-                        volXml.Save(swr);
-                    }
-                }
+                var xmlGetter = new GettingXmlDocumentStream(volXml);
+                zip.SetDataItem(xmlGetter, tpath);
 
                 createVolumeAction?.Invoke(volValue);
 
@@ -478,21 +486,16 @@ namespace Cheng.EasyBooks
                         path = volValue.chapters[i].chapterFilePath;
                         //tpath = path.pathRepTo();
                         tpath = Path.Combine(rootPath, path).pathRepTo();
-                        tpath = Path.ChangeExtension(tpath, ".html");
+                        tpath = Path.ChangeExtension(tpath, EpubChapterFileExtension);
 
                         using (var openC = ebk.CreateChapterStream(volValue.chapters[i]))
                         {
                             volXml = CreateEpubChapter(openC, volValue.chapters[i]);
                         }
 
-                        entry = zip.CreateEntry(tpath);
-                        using (var openStream = entry.Open())
-                        {
-                            using (StreamWriter swr = new StreamWriter(openStream, Encoding.UTF8, 1024 * 2, true))
-                            {
-                                volXml.Save(swr);
-                            }
-                        }
+                        xmlGetter = new GettingXmlDocumentStream(volXml);
+                        zip.SetDataItem(xmlGetter, tpath);
+
                         createChapterAction?.Invoke(volValue.chapters[i]);
 
                     }
@@ -509,24 +512,22 @@ namespace Cheng.EasyBooks
         /// <param name="zip"></param>
         /// <param name="ebk"></param>
         /// <param name="createImageAction">每次成功拷贝一个图像执行，参数表示图像所在路径</param>
-        public static void CreateEpubImages(ZipArchive zip, EasyBook ebk, Action<TreeNode<TreeNodeData>> createImageAction)
+        public static void CreateEpubImages(ZipPackagingOperation zip, EasyBook ebk, Action<TreeNode<TreeNodeData>> createImageAction)
         {
             if (zip is null || ebk is null) throw new ArgumentNullException();
             var vols = ebk.VolumeRoot;
 
-            const string rootPath = "OEBPS";
+            const string rootPath = EbkToEpubRootPtah;
 
             var header = ebk.Header;
             var pack = ebk.BaseDataPack;
 
-            if (header.coverImage is object)
+            if (!string.IsNullOrEmpty(header.coverImage))
             {
                 //存在封面
-                var coverT = zip.CreateEntry(Path.Combine(rootPath, header.coverImage).pathRepTo());
-                using (var copen = coverT.Open())
-                {
-                    ebk.BaseDataPack.DeCompressionTo(header.coverImage, copen);
-                }
+                var coverImgPath = Path.Combine(rootPath, header.coverImage).pathRepTo();
+
+                zip.SetDataItem(new CompressionParserOpenStreamByPath(pack, header.coverImage), coverImgPath);
 
             }
 
@@ -545,8 +546,6 @@ namespace Cheng.EasyBooks
 
             imageNode.ForeachBreadth(actionTreeImage, new Queue<TreeNode<TreeNodeData>>());
 
-            //foeachDepth(imageNode, actionTreeImage);
-
             bool actionTreeImage(TreeNode<TreeNodeData> t_treeNode)
             {
                 var volValue = t_treeNode.Value;
@@ -555,11 +554,10 @@ namespace Cheng.EasyBooks
 
                 if(volValue.dataPath is null) return false;
                 //创建epub节点
-                var entry = zip.CreateEntry(Path.Combine(rootPath, volValue.dataPath).pathRepTo());
-                using (var zipStream = entry.Open())
-                {
-                    pack.DeCompressionTo(volValue.dataPath, zipStream); //从ebk拷贝图像
-                }
+                var treeAcPath = Path.Combine(rootPath, volValue.dataPath).pathRepTo();
+
+                zip.SetDataItem(new CompressionParserOpenStreamByPath(pack, volValue.dataPath), treeAcPath);
+
                 createImageAction?.Invoke(t_treeNode);
                 return true;
             }
@@ -570,77 +568,22 @@ namespace Cheng.EasyBooks
 
         #region container.xml
 
-        /// <summary>
-        /// （epub基础结构）创建 container.xml（<see cref="CreateEpubOPF(ZipArchive, EasyBook)"/>）后调用
-        /// </summary>
-        /// <returns></returns>
-        public static XmlDocument CreateContainer()
+        static byte[] CreateContainerBytes()
         {
-            XmlDocument xml = new XmlDocument();
-
-            var root = xml.CreateElement("container", "urn:oasis:names:tc:opendocument:xmlns:container");
-            root.SetAttribute("version", "1.0");
-            xml.AppendChild(root);
-            var rootFiles = xml.CreateElement("rootfiles");
-
-            root.AppendChild(rootFiles);
-
-            var rootfile = xml.CreateElement("rootfile");
-            rootFiles.AppendChild(rootfile);
-
-            rootfile.SetAttribute("full-path", @"OEBPS/content.opf".pathRepTo());
-            rootfile.SetAttribute("media-type", @"application/oebps-package+xml");
-
-            return xml;
+            var sb = new CMStringBuilder(256 + 64);
+            sb
+.Append("<?xml version=\"1.0\" encoding=\"utf-8\"?>").Append('\n')
+.Append("<container version=\"1.0\" xmlns=\"urn:oasis:names:tc:opendocument:xmlns:container\">").Append('\n')
+.Append("   <rootfiles>").Append('\n')
+.Append("      <rootfile full-path=\"OEBPS/content.opf\" media-type=\"application/oebps-package+xml\"/>").Append('\n')
+.Append("   </rootfiles>").Append('\n')
+.Append("</container>")
+;
+            var cbuf = sb.GetCharBuffer();
+            return Encoding.UTF8.GetBytes(cbuf.Array, cbuf.Offset, cbuf.Count);
         }
 
         #endregion
-
-        /// <summary>
-        /// 分卷查询根目录
-        /// </summary>
-        /// <param name="volNode"></param>
-        /// <returns></returns>
-        static string getRootPath(TreeNode<Volume> volNode)
-        {
-            TreeNode<Volume> tn = volNode;
-            string path = "";
-
-            while (true)
-            {
-                var tp = tn.Parent;
-                if (tp is null)
-                {
-                    break;
-                }
-                //向前拼接
-                path = Path.Combine(path, tn.Value.index);
-                //父节点
-                tn = tp;
-            }
-            //获取文件夹根节点
-            return Path.Combine("text", path).pathRepTo();
-        }
-
-        /// <summary>
-        /// 路径替换 - 
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        static string pathRepIndex(string path)
-        {
-            return path?.Replace('\\', '-')?.Replace('/', '-');
-        }
-
-        /// <summary>
-        /// 路径兼容性替换
-        /// </summary>
-        /// <param name="path"></param>
-        /// <returns></returns>
-        static string pathRepTo(this string path)
-        {
-            return path?.Replace('\\', pathSeparator);
-        }
 
         #region content.opf
 
@@ -653,13 +596,14 @@ namespace Cheng.EasyBooks
         {
             XmlDocument xml = new XmlDocument();
 
+            const string rootNameSpace = "http://www.idpf.org/2007/opf";
+
             #region
+            var root = xml.CreateElement("package", rootNameSpace);
 
-            var root = xml.CreateElement("package", "http://www.idpf.org/2007/opf");
-
-            root.SetAttribute("unique-identifier", "bookid");
+            root.SetAttribute("unique-identifier", "chengsmall-easybook-convert-epub");
             root.SetAttribute("version", "2.0");
-            root.SetAttribute("xmlns", "http://www.idpf.org/2007/opf");
+            root.SetAttribute("xmlns", rootNameSpace);
             xml.AppendChild(root);
             //数据头
             var metadata = xml.CreateElement("metadata");
@@ -669,14 +613,29 @@ namespace Cheng.EasyBooks
             var spine = xml.CreateElement("spine");
             spine.SetAttribute("toc", "ncx");
 
+            root.AppendChild(metadata);
+            root.AppendChild(manifest);
+            root.AppendChild(spine);
+
             #endregion
 
             #region metadata
 
             var eheader = easybook.Header;
-            //xml.CreateElement("dc:identifier");
+            // <dc:identifier id="bookID" opf:scheme="UUID">UUID</dc:identifier>
+            byte[] uuidBuf = new byte[16];
+            XmlElement node;
+            var rand = new XorshiftRandom(Environment.TickCount - DateTime.Now.Ticks);
+            rand.NextBytes(uuidBuf);
+            node = xml.CreateElement("dc", "identifier", rootNameSpace);
+            node.SetAttribute("id", "chengsmall-easybook-convert-epub");
+            node.SetAttribute("opf:scheme", "UUID");
+            node.AppendChild(xml.CreateTextNode("urn:uuid:" + Uuid.CreateFromBytes(uuidBuf).SetToUUIDv4().ToString(false)));
+            metadata.AppendChild(node);
+
+            // <dc:title xmlns:dc=" ">easybook介绍和标准定义</dc:title>
             //书名
-            var node = xml.CreateElement("dc", "title", " ");
+            node = xml.CreateElement("dc", "title", " ");
             node.AppendChild(xml.CreateTextNode(eheader.name));
             metadata.AppendChild(node);
 
@@ -696,7 +655,7 @@ namespace Cheng.EasyBooks
 
             //时间
             node = xml.CreateElement("dc", "date", " ");
-            node.AppendChild(xml.CreateTextNode(ToTime(DateTime.UtcNow)));
+            node.AppendChild(xml.CreateTextNode(ToTime(DateTime.Now)));
             metadata.AppendChild(node);
 
             //简介
@@ -713,15 +672,19 @@ namespace Cheng.EasyBooks
                 }
                 else
                 {
-                    using (StringReader sread = new StringReader(eheader.synopsis))
+                    using (var sread = new StringReader(eheader.synopsis))
                     {
-                        while (true)
+                        using (var nread = new Cheng.Texts.NewLineStdTextReader(sread, false))
                         {
-                            var line = sread.ReadLine();
-                            if (line is null) break;
-                            var p = xml.CreateElement("p");
-                            p.AppendChild(xml.CreateTextNode(line));
+                            while (true)
+                            {
+                                var line = nread.ReadLine();
+                                if (line is null) break;
+                                var p = xml.CreateElement("p");
+                                p.AppendChild(xml.CreateTextNode(line));
+                            }
                         }
+                        
 
                     }
                 }
@@ -731,15 +694,13 @@ namespace Cheng.EasyBooks
 
             #endregion
 
-            //const string rootEpub = "OEBPS/";
-
             #region 资源清单
 
             //OEBPS/text/ 规定小说内容
             //OEBPS/image/ 规定小说图像 -> 一比一还原easybook目录
             //OEBPS/cover.* 规定小说封面
 
-            if (eheader.coverImage is object)
+            if (!string.IsNullOrEmpty(eheader.coverImage))
             {
                 //封面
 
@@ -755,7 +716,7 @@ namespace Cheng.EasyBooks
                     case ".jpeg":
                         medCov = "jpeg";
                         break;
-                    case "bmp":
+                    case ".bmp":
                         medCov = "bitmap";
                         break;
                     default:
@@ -764,15 +725,15 @@ namespace Cheng.EasyBooks
                 //封面索引使用 cover-image
 
                 //<item id="cover-image" href="cover.[后缀]" media-type="image/[类型]">
-
+                var imgPath = (eheader.coverImage?.pathRepTo());
                 manifest.AppendChild(CreateManifestItemNode(xml,
-                    "cover-image", (eheader.coverImage),
+                    "cover-image", imgPath,
                     "image/" + medCov, null));
 
                 //<item id="cover.html" href="cover.html" media-type="application/xhtml+xml"/>
                 //封面显示文件也在OBS根目录
 
-                manifest.AppendChild(CreateMftHtml(xml, "cover-file", "cover.html"));
+                manifest.AppendChild(CreateMftHtml(xml, "cover-file", "cover" + EpubChapterFileExtension));
 
             }
 
@@ -784,7 +745,7 @@ namespace Cheng.EasyBooks
             规则:
             从 "OEBPS\text" 开始为根
             一比一获取 ebk 节点
-            到达章节节点 -> *.txt <=> *.html
+            到达章节节点 -> *.txt <=> *.xhtml
             */
             //ebk章节根目录
             var ebkVolRoot = easybook.VolumeRoot;
@@ -802,10 +763,10 @@ namespace Cheng.EasyBooks
 
             #region 顺序文件
 
-            if(eheader.coverImage is object)
+            if(!string.IsNullOrEmpty(eheader.coverImage))
             {
                 //封面图（如果有）
-                spine.AppendChild(CreateItemRef(xml, "cover-image"));
+                spine.AppendChild(CreateItemRef(xml, "cover-file"));
             }
 
             //顺序写下集合内的文件
@@ -815,10 +776,6 @@ namespace Cheng.EasyBooks
             }
 
             #endregion
-
-            root.AppendChild(metadata);
-            root.AppendChild(manifest);
-            root.AppendChild(spine);
 
             return xml;
         }
@@ -849,7 +806,7 @@ namespace Cheng.EasyBooks
             public XmlElement manifest;
             public List<string> idList;
 
-           
+
             public void ForeachEBKVolNode(TreeNode<Volume> node)
             {
                 var volValue = node.Value;
@@ -867,12 +824,10 @@ namespace Cheng.EasyBooks
                     path = getRootPath(node);
                     //if (path == "text") return;
                     //路径替换正斜杠
-                    //var tpath = path.Replace('\\', '/');
                     var tpath = pathRepTo(path);
                     //tpath 是父级目录
-                    //tpath = Path.Combine(tpath, volValue.index);
 
-                    manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(tpath), tpath + ".html"));
+                    manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(tpath), tpath + EpubChapterFileExtension));
                     idList.Add(pathRepIndex(tpath));
                 }
                 else if(volValue.volumeType == VolumeType.Chapters)
@@ -883,7 +838,7 @@ namespace Cheng.EasyBooks
                     //添加章节节点
                     path = getRootPath(node);
                     var tpath = path.pathRepTo();
-                    manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(tpath), tpath + ".html"));
+                    manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(tpath), tpath + EpubChapterFileExtension));
                     idList.Add(pathRepIndex(tpath));
                     //顺序添加章节内容
                     for (int i = 0; i < volValue.chapters.Count; i++)
@@ -892,7 +847,7 @@ namespace Cheng.EasyBooks
                         if(ci.chapterFilePath is null) throw new ArgumentNullException();
                         path = ci.chapterFilePath.pathRepTo();
                         //创建路径文件
-                        manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(path), Path.ChangeExtension(path, ".html")));
+                        manifest.AppendChild(CreateMftHtml(doc, pathRepIndex(path), Path.ChangeExtension(path, EpubChapterFileExtension)));
                         idList.Add(pathRepIndex(path));
                     }
 
@@ -903,12 +858,14 @@ namespace Cheng.EasyBooks
 
         #region 资源清单类型
 
+#if DEBUG
         /// <summary>
         /// 创建顺序文件
         /// </summary>
         /// <param name="doc"></param>
         /// <param name="idref">资源清单引用</param>
         /// <returns></returns>
+#endif
         static XmlElement CreateItemRef(XmlDocument doc, string idref)
         {
             //<itemref idref="cover.html"/>
@@ -917,70 +874,24 @@ namespace Cheng.EasyBooks
             return item;
         }
 
+#if DEBUG
         /// <summary>
         /// 创建一个NCX资源清单item
         /// </summary>
         /// <param name="doc"></param>
         /// <returns></returns>
+#endif
         static XmlElement CreateMftNCXNode(XmlDocument doc)
         {
             //<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-            var item = doc.CreateElement("item");
+            var item = doc.CreateElement("item", "http://www.idpf.org/2007/opf");
             item.SetAttribute("id", "ncx");
             item.SetAttribute("href", "toc.ncx");
             item.SetAttribute("media-type", "application/x-dtbncx+xml");
             return item;
         }
 
-  
-        /// <summary>
-        /// 创建png资源清单节点
-        /// </summary>
-        /// <param name="doc"></param>
-        /// <param name="id"></param>
-        /// <param name="href"></param>
-        /// <returns></returns>
-        static XmlElement CreateManifestPngImage(XmlDocument doc, string id, string href)
-        {
-            var item = doc.CreateElement("item");
-            item.SetAttribute("id", id);
-            item.SetAttribute("href", href);
-            item.SetAttribute("media-type", "image/png");
-            return item;
-        }
-
-        /// <summary>
-        /// 创建jpg资源清单节点
-        /// </summary>
-        /// <param name="doc"></param>
-        /// <param name="id"></param>
-        /// <param name="href"></param>
-        /// <returns></returns>
-        static XmlElement CreateManifestJpegImage(XmlDocument doc, string id, string href)
-        {
-            var item = doc.CreateElement("item");
-            item.SetAttribute("id", id);
-            item.SetAttribute("href", href);
-            item.SetAttribute("media-type", "image/jpeg");
-            return item;
-        }
-
-        /// <summary>
-        /// 创建bmp资源清单节点
-        /// </summary>
-        /// <param name="doc"></param>
-        /// <param name="id"></param>
-        /// <param name="href"></param>
-        /// <returns></returns>
-        static XmlElement CreateManifestBmpImage(XmlDocument doc, string id, string href)
-        {
-            var item = doc.CreateElement("item");
-            item.SetAttribute("id", id);
-            item.SetAttribute("href", href);
-            item.SetAttribute("media-type", "image/bitmap");
-            return item;
-        }
-
+#if DEBUG
         /// <summary>
         /// 创建html资源清单
         /// </summary>
@@ -988,6 +899,7 @@ namespace Cheng.EasyBooks
         /// <param name="id"></param>
         /// <param name="href"></param>
         /// <returns></returns>
+#endif
         static XmlElement CreateMftHtml(XmlDocument doc, string id, string href)
         {
             var item = doc.CreateElement("item");
@@ -997,6 +909,7 @@ namespace Cheng.EasyBooks
             return item;
         }
 
+#if DEBUG
         /// <summary>
         /// 创建一个资源清单节点
         /// </summary>
@@ -1006,6 +919,7 @@ namespace Cheng.EasyBooks
         /// <param name="media_type">media-type；null表示无此属性</param>
         /// <param name="properties">properties属性；null表示无此属性</param>
         /// <returns></returns>
+#endif
         static XmlElement CreateManifestItemNode(XmlDocument doc, string id, string href, string media_type, string properties)
         {
             var item = doc.CreateElement("item");
@@ -1030,12 +944,48 @@ namespace Cheng.EasyBooks
         private struct NCX_Data
         {
 
-            public XmlElement CreateNCX_head()
+            internal XmlDocument doc;
+            internal EasyBook ebk;
+            internal long navPointCount;
+            internal int maxDepValue;
+
+            private void f_foreachDepVol(TreeNode<Volume> node, int nowDep)
+            {
+                var nv = node.Value;
+                if(nv.volumeType != VolumeType.Node)
+                {
+                    maxDepValue = Math.Max(maxDepValue, nowDep);
+                    return;
+                }
+                var length = node.Count;
+                for (int i = 0; i < length; i++)
+                {
+                    var sn = node[i];
+                    f_foreachDepVol(sn, nowDep + 1);
+                }
+            }
+
+            private void f_getDepVolume()
+            {
+                var root = ebk.VolumeRoot;
+
+                var rv = root.Value;
+                if (rv.volumeType != VolumeType.Node)
+                {
+                    // 不存在嵌套
+                    maxDepValue = 1;
+                    return;
+                }
+
+                f_foreachDepVol(root, 1);
+            }
+
+            internal XmlElement CreateNCX_head()
             {
                 var head = doc.CreateElement("head");
                 /*
                 <meta name="dtb:uid" content="urn:uuid:xxx-78933444"/>
-                <meta name="dtb:depth" content="4"/>
+                <meta name="dtb:depth" content="最大嵌套深度"/>
                 <meta name="dtb:totalPageCount" content="0"/>
                 <meta name="dtb:maxPageNumber" content="0"/>
                 */
@@ -1043,10 +993,12 @@ namespace Cheng.EasyBooks
                 meta.SetAttribute("name", "dtb:uid");
                 meta.SetAttribute("content", "urn:uuid:xxx-78933444");
                 head.AppendChild(meta);
+                maxDepValue = 1;
+                f_getDepVolume();
 
                 meta = doc.CreateElement("meta");
                 meta.SetAttribute("name", "dtb:depth");
-                meta.SetAttribute("content", "4");
+                meta.SetAttribute("content", maxDepValue.ToString());
                 head.AppendChild(meta);
 
                 meta = doc.CreateElement("meta");
@@ -1062,18 +1014,40 @@ namespace Cheng.EasyBooks
                 return head;
             }
 
-            public XmlDocument doc;
-            public EasyBook ebk;
-            public long navPointCount;
-
-            public XmlElement CreateNCX_navMap()
+            internal XmlElement CreateNCX_navMap()
             {
-                navPointCount = 1;
-
-                //var maps = CreateNavpoit(ebk.VolumeRoot);
-
                 var root = ebk.VolumeRoot;
                 var ms = doc.CreateElement("navMap");
+
+                {
+                    /*
+                    <navPoint id="cover-file" playOrder="1">
+                        <navLabel>
+                            <text>标题</text>
+                        </navLabel>
+                        <content src="cover.xhtml" />
+                    </navPoint>
+                    */
+
+                    var navPoint = doc.CreateElement("navPoint");
+                    navPoint.SetAttribute("id", "cover-file");
+                    navPoint.SetAttribute("playOrder", "1");
+
+                    var label = doc.CreateElement("navLabel");
+                    //分卷名
+                    var labT = doc.CreateElement("text");
+                    labT.AppendChild(doc.CreateTextNode(ebk.Header.name));
+                    label.AppendChild(labT);
+                    navPoint.AppendChild(label);
+
+                    var ct = doc.CreateElement("content");
+                    ct.SetAttribute("src", "cover" + EpubChapterFileExtension);
+                    navPoint.AppendChild(ct);
+
+                    ms.AppendChild(navPoint);
+
+                    navPointCount = 2;
+                }
 
                 var vol = root.Value;
                 if (vol.volumeType == VolumeType.Node)
@@ -1095,13 +1069,6 @@ namespace Cheng.EasyBooks
 
             XmlElement CreateNavpoit(TreeNode<Volume> ebkVol)
             {
-                /*
-                <navPoint> 包含
-                <navLabel>节点名<navLabel/>
-                引用数据 <content src="text/00003.html" />
-
-                子类 <navPoint> 节点（可选）
-                */
                 var volValue = ebkVol.Value;
 
                 var navPoint = doc.CreateElement("navPoint");
@@ -1122,11 +1089,10 @@ namespace Cheng.EasyBooks
                     rootPath = rootPath?.pathRepTo();
                     if (rootPath is null) throw new ArgumentNullException();
                     navPoint.SetAttribute("id", pathRepIndex(rootPath));
-                    navPoint.SetAttribute("playOrder", navPointCount.ToString());
+                    navPoint.SetAttribute("playOrder", (navPointCount).ToString());
 
-
-                    rootPath = rootPath + ".html";
-                    if(rootPath != "text.html")
+                    rootPath = rootPath + EpubChapterFileExtension;
+                    if(rootPath != ("text" + EpubChapterFileExtension))
                     {
                         var volCont = doc.CreateElement("content");
                         volCont.SetAttribute("src", rootPath);
@@ -1152,9 +1118,9 @@ namespace Cheng.EasyBooks
                     if (rootPath is null) throw new ArgumentNullException();
                     navPoint.SetAttribute("id", pathRepIndex(rootPath));
                     navPoint.SetAttribute("playOrder", navPointCount.ToString());
-
-                    rootPath = rootPath + ".html";
-                    if (rootPath != "text.html")
+                    
+                    rootPath = rootPath + EpubChapterFileExtension;
+                    if (rootPath != ("text" + EpubChapterFileExtension))
                     {
                         var volCont = doc.CreateElement("content");
                         volCont.SetAttribute("src", rootPath);
@@ -1176,7 +1142,7 @@ namespace Cheng.EasyBooks
                 var navPoint = doc.CreateElement("navPoint");
                 var label = doc.CreateElement("navLabel");
                 navPoint.SetAttribute("id", pathRepIndex(ci.chapterFilePath?.pathRepTo()));
-                navPoint.SetAttribute("playOrder", navPointCount.ToString());
+                navPoint.SetAttribute("playOrder", (navPointCount).ToString());
                 
                 
                 var lttx = doc.CreateElement("text");
@@ -1186,7 +1152,7 @@ namespace Cheng.EasyBooks
                 var cont = doc.CreateElement("content");
                 var tpath = ci.chapterFilePath?.pathRepTo();
                 if (tpath is null) throw new ArgumentNullException();
-                tpath = Path.ChangeExtension(tpath, ".html");
+                tpath = Path.ChangeExtension(tpath, EpubChapterFileExtension);
                 cont.SetAttribute("src", tpath);
                 
                 navPoint.AppendChild(label);
@@ -1207,29 +1173,34 @@ namespace Cheng.EasyBooks
         public static XmlDocument CreateNCX(EasyBook easybook)
         {
             XmlDocument doc = new XmlDocument();
-
+            const string rootNameSpace = "http://www.daisy.org/z3986/2005/ncx/";
             var dr = doc.CreateDocumentType("ncx", "-//NISO//DTD ncx 2005-1//EN", "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd", null);
 
             doc.AppendChild(dr);
-            var ncx = doc.CreateElement("ncx", "http://www.daisy.org/z3986/2005/ncx/");
+            var ncx = doc.CreateElement("ncx", rootNameSpace);
             doc.AppendChild(ncx);
 
             ncx.SetAttribute("version", "2005-1");
+            ncx.SetAttribute("xml", "lang", "en");
 
             var header = easybook.Header;
 
             #region ncx
 
-            NCX_Data ncxdata;
+            NCX_Data ncxdata = default;
             ncxdata.doc = doc;
             ncxdata.ebk = easybook;
             ncxdata.navPointCount = 0;
+            ncxdata.maxDepValue = 1;
             var head = ncxdata.CreateNCX_head();
 
             var docTitle = doc.CreateElement("docTitle");
-            var docTitle_text = doc.CreateElement("text");
-            docTitle_text.AppendChild(doc.CreateTextNode(header.name));
-            docTitle.AppendChild(docTitle_text);
+
+            {
+                var docTitle_text = doc.CreateElement("text");
+                docTitle_text.AppendChild(doc.CreateTextNode(header.name));
+                docTitle.AppendChild(docTitle_text);
+            }
 
             var navMap = ncxdata.CreateNCX_navMap();
 
@@ -1239,6 +1210,62 @@ namespace Cheng.EasyBooks
             #endregion
 
             return doc;
+        }
+
+        #endregion
+
+        #region 封装
+
+#if DEBUG
+        /// <summary>
+        /// 分卷查询根目录
+        /// </summary>
+        /// <param name="volNode"></param>
+        /// <returns></returns>
+#endif
+        static string getRootPath(TreeNode<Volume> volNode)
+        {
+            TreeNode<Volume> tn = volNode;
+            string path = "";
+
+            while (true)
+            {
+                var tp = tn.Parent;
+                if (tp is null)
+                {
+                    break;
+                }
+                //向前拼接
+                path = Path.Combine(path, tn.Value.index);
+                //父节点
+                tn = tp;
+            }
+            //获取文件夹根节点
+            return Path.Combine("text", path).pathRepTo();
+        }
+
+#if DEBUG
+        /// <summary>
+        /// 路径替换 - 
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+#endif
+        static string pathRepIndex(string path)
+        {
+            return path?.Replace('\\', '-')?.Replace('/', '-');
+        }
+
+#if DEBUG
+        /// <summary>
+        /// 路径兼容性替换
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+#endif
+        static string pathRepTo(this string path)
+        {
+            return path?.Replace('\\', pathSeparator);
         }
 
         #endregion

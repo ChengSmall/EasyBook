@@ -18,6 +18,10 @@ using Cheng.Algorithm.Compressions.Systems;
 using Cheng.DataStructure.Collections;
 using Cheng.Algorithm.Trees;
 using Cheng.EasyBooks;
+using System.Reflection;
+using Cheng.Algorithm.Compressions.ZipDataParser;
+using Cheng.Algorithm.Compressions.ZipPackagings;
+using Cheng.EasyBooks.ToEpubs;
 
 using PreValue = Cheng.EasyBooks.WinForms.PreferencesWindow.PreferencesValue;
 
@@ -25,8 +29,6 @@ using CTNodeV = Cheng.DataStructure.Collections.TreeNode<Cheng.EasyBooks.Volume>
 using CTNodeD = Cheng.DataStructure.Collections.TreeNode<Cheng.Algorithm.Trees.TreeNodeData>;
 
 using STreeNode = System.Windows.Forms.TreeNode;
-using System.Reflection;
-using Cheng.Algorithm.Compressions.ZipDataParser;
 
 namespace Cheng.EasyBooks.WinForms
 {
@@ -652,15 +654,16 @@ namespace Cheng.EasyBooks.WinForms
                 try
                 {
                     rtf = new RTFTextWriter(mainForm);
+                    ZipPackagingOperation zpack = new ZipPackagingOperation(1024 * 16);
+
+                    ConvertEpub.CreateEpubByEbk(mainForm.p_easyBook, zpack, rtf);
+
                     using (FileStream zipFile = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
                     {
-                        ConvertEpub.CreateEpubHeader(zipFile);
 
-                        zipFile.Seek(0, SeekOrigin.Begin);
-                        using (ZipArchive zip = new ZipArchive(zipFile, ZipArchiveMode.Update, true, Encoding.UTF8))
+                        foreach (var item in zpack.PackToEnumerable(zipFile))
                         {
-
-                            ConvertEpub.CreateEpubByEbk(mainForm.p_easyBook, zip, rtf);
+                            rtf.WriteLine($"已打包\"{item.path}\"");
                         }
 
                     }

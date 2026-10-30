@@ -71,7 +71,7 @@ namespace Cheng.EasyBooks
         public string coverImage;
 
         /// <summary>
-        /// 简介，null表示没有
+        /// 简介，'\n'表示换行，null表示没有
         /// </summary>
         public string synopsis;
 
@@ -154,7 +154,7 @@ namespace Cheng.EasyBooks
                             }
                             else
                             {
-                                sBuf.AppendLine(sysArr[i].String);
+                                sBuf.Append(sysArr[i].String).Append('\n');
                             }
 
                         }
